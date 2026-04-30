@@ -7,15 +7,18 @@ import { ProfessoresManager } from "./components/ProfessoresManager"
 import { DisciplinasManager } from "./components/DisciplinasManager"
 import { TurmasManager } from "./components/TurmasManager"
 import { EnsalamentoExecutor } from "./components/EnsalamentoExecutor"
+import { Agendamento } from "./components/Agendamento"
+import { GradeHorario } from "./components/GradeHorario"
 import { Relatorios } from "./components/Relatorios"
 import { Configuracoes } from "./components/Configuracoes"
 import { LoginPage } from "./components/LoginPage"
 import { UserProfile } from "./components/UserProfile"
+import { GradeProvider } from "./context/GradeContext"
 import { Toaster } from "./components/ui/sonner"
 import { Button } from "./components/ui/button"
 import { LogOut, User } from 'lucide-react'
 
-export type NavigationItem = 'dashboard' | 'salas' | 'professores' | 'disciplinas' | 'turmas' | 'ensalamento' | 'relatorios' | 'configuracoes' | 'perfil'
+export type NavigationItem = 'dashboard' | 'salas' | 'professores' | 'disciplinas' | 'turmas' | 'ensalamento' | 'agendamento' | 'grade' | 'relatorios' | 'configuracoes' | 'perfil'
 
 interface UserData {
   email: string
@@ -60,6 +63,10 @@ export default function App() {
         return <TurmasManager />
       case 'ensalamento':
         return <EnsalamentoExecutor />
+      case 'agendamento':
+        return <Agendamento />
+      case 'grade':
+        return <GradeHorario />
       case 'relatorios':
         return <Relatorios />
       case 'configuracoes':
@@ -72,6 +79,7 @@ export default function App() {
   }
 
   return (
+    <GradeProvider>
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar 
@@ -129,5 +137,6 @@ export default function App() {
       </div>
       <Toaster />
     </SidebarProvider>
+    </GradeProvider>
   )
 }

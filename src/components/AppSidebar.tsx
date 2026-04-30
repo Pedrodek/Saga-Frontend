@@ -5,6 +5,8 @@ import {
   BookOpen, 
   GraduationCap, 
   CalendarDays, 
+  CalendarClock,
+  TableProperties,
   FileText, 
   Settings,
   User
@@ -81,6 +83,18 @@ export function AppSidebar({ activeSection, onNavigate, user }: AppSidebarProps)
         title: 'Ensalamento',
         icon: CalendarDays,
         allowedProfiles: ['Administrador', 'Coordenador']
+      },
+      {
+        id: 'agendamento' as NavigationItem,
+        title: 'Agendamento',
+        icon: CalendarClock,
+        allowedProfiles: ['Administrador', 'Coordenador', 'Professor']
+      },
+      {
+        id: 'grade' as NavigationItem,
+        title: 'Grade Horário',
+        icon: TableProperties,
+        allowedProfiles: ['Administrador', 'Coordenador', 'Professor']
       },
       {
         id: 'relatorios' as NavigationItem,
