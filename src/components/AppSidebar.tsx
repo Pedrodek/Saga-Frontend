@@ -1,15 +1,8 @@
 import { 
   LayoutDashboard, 
-  Building2, 
-  Users, 
-  BookOpen, 
-  GraduationCap, 
-  CalendarDays, 
   CalendarClock,
   TableProperties,
-  FileText, 
-  Settings,
-  User
+  GraduationCap
 } from 'lucide-react'
 import {
   Sidebar,
@@ -45,85 +38,32 @@ export function AppSidebar({ activeSection, onNavigate, user }: AppSidebarProps)
       .substring(0, 2)
   }
 
-  // Filtrar itens baseado no perfil do usuário
-  const getNavigationItems = () => {
-    const allItems = [
-      {
-        id: 'dashboard' as NavigationItem,
-        title: 'Dashboard',
-        icon: LayoutDashboard,
-        allowedProfiles: ['Administrador', 'Coordenador', 'Professor']
-      },
-      {
-        id: 'salas' as NavigationItem,
-        title: 'Salas',
-        icon: Building2,
-        allowedProfiles: ['Administrador', 'Coordenador', 'Professor']
-      },
-      {
-        id: 'professores' as NavigationItem,
-        title: 'Professores',
-        icon: Users,
-        allowedProfiles: ['Administrador', 'Coordenador']
-      },
-      {
-        id: 'disciplinas' as NavigationItem,
-        title: 'Disciplinas',
-        icon: BookOpen,
-        allowedProfiles: ['Administrador', 'Coordenador', 'Professor']
-      },
-      {
-        id: 'turmas' as NavigationItem,
-        title: 'Turmas',
-        icon: GraduationCap,
-        allowedProfiles: ['Administrador', 'Coordenador', 'Professor']
-      },
-      {
-        id: 'ensalamento' as NavigationItem,
-        title: 'Ensalamento',
-        icon: CalendarDays,
-        allowedProfiles: ['Administrador', 'Coordenador']
-      },
-      {
-        id: 'agendamento' as NavigationItem,
-        title: 'Agendamento',
-        icon: CalendarClock,
-        allowedProfiles: ['Administrador', 'Coordenador', 'Professor']
-      },
-      {
-        id: 'grade' as NavigationItem,
-        title: 'Grade Horário',
-        icon: TableProperties,
-        allowedProfiles: ['Administrador', 'Coordenador', 'Professor']
-      },
-      {
-        id: 'relatorios' as NavigationItem,
-        title: 'Relatórios',
-        icon: FileText,
-        allowedProfiles: ['Administrador', 'Coordenador', 'Professor']
-      },
-      {
-        id: 'configuracoes' as NavigationItem,
-        title: 'Configurações',
-        icon: Settings,
-        allowedProfiles: ['Administrador']
-      }
-    ]
+  const navigationItems = [
+    {
+      id: 'dashboard' as NavigationItem,
+      title: 'Dashboard',
+      icon: LayoutDashboard,
+    },
+    {
+      id: 'agendamento' as NavigationItem,
+      title: 'Agendamento',
+      icon: CalendarClock,
+    },
+    {
+      id: 'grade' as NavigationItem,
+      title: 'Grade Horário',
+      icon: TableProperties,
+    },
+  ]
 
-    return allItems.filter(item => 
-      item.allowedProfiles.includes(user.perfil)
-    )
-  }
-
-  const navigationItems = getNavigationItems()
   return (
     <Sidebar>
       <SidebarHeader className="border-b px-6 py-4">
         <div className="flex items-center gap-2">
           <GraduationCap className="size-6 text-primary" />
           <div>
-            <h2>UniRoom</h2>
-            <p className="text-muted-foreground">Sistema de Ensalamento</p>
+            <h2>SAGA</h2>
+            <p className="text-muted-foreground">Gestão Acadêmica</p>
           </div>
         </div>
       </SidebarHeader>
@@ -153,29 +93,17 @@ export function AppSidebar({ activeSection, onNavigate, user }: AppSidebarProps)
       </SidebarContent>
       
       <SidebarFooter className="border-t px-6 py-4">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={activeSection === 'perfil'}
-            >
-              <button
-                onClick={() => onNavigate('perfil')}
-                className="flex items-center gap-3 w-full"
-              >
-                <Avatar className="h-6 w-6">
-                  <AvatarFallback className="text-xs">
-                    {getInitials(user.nome)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 text-left">
-                  <div className="font-medium text-sm">{user.nome.split(' ')[0]}</div>
-                  <div className="text-xs text-muted-foreground">{user.perfil}</div>
-                </div>
-              </button>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <div className="flex items-center gap-3 px-2">
+          <Avatar className="h-6 w-6">
+            <AvatarFallback className="text-xs">
+              {getInitials(user.nome)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 text-left">
+            <div className="font-medium text-sm">{user.nome.split(' ')[0]}</div>
+            <div className="text-xs text-muted-foreground">{user.perfil}</div>
+          </div>
+        </div>
       </SidebarFooter>
     </Sidebar>
   )

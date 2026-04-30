@@ -29,16 +29,40 @@ export function Agendamento() {
   const { gradeEntries } = useGrade()
   const [dayOffset, setDayOffset] = useState(0)
 
+  const weekdayNames = [
+    'Domingo', 'Segunda-feira', 'Terça-feira',
+    'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'
+  ]
+
+  const today = new Date()
+  const currentDate = new Date(today)
+  currentDate.setDate(today.getDate() + dayOffset)
+  const currentWeekday = currentDate.getDay() // 0=Dom, 6=Sáb
+
+  // Limites: Domingo (início da semana) e Sábado (fim da semana)
+  const todayWeekday = today.getDay()
+  const minOffset = -todayWeekday       // Voltar até Domingo
+  const maxOffset = 6 - todayWeekday    // Avançar até Sábado
+
+  const canGoPrev = dayOffset > minOffset
+  const canGoNext = dayOffset < maxOffset
+
   const getDayKey = () => {
     if (dayOffset === 0) return 'Atual'
     if (dayOffset < 0) return 'Anterior'
     return 'Posterior'
   }
 
+  const getFormattedDate = () => {
+    const day = String(currentDate.getDate()).padStart(2, '0')
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0')
+    return `${day}/${month}`
+  }
+
   const getDayLabel = () => {
-    if (dayOffset === 0) return 'Dia Atual'
-    if (dayOffset < 0) return 'Dia Anterior'
-    return 'Dia Posterior'
+    const name = weekdayNames[currentWeekday]
+    if (dayOffset === 0) return `${name} (Hoje)`
+    return `${name}, ${getFormattedDate()}`
   }
 
   const currentDay = getDayKey()
@@ -71,6 +95,14 @@ export function Agendamento() {
 
   const absentClasses = currentEntries.filter((entry) => !entry.hasClass)
 
+  // Weekday do dia anterior e posterior para os botões
+  const prevWeekday = dayOffset > minOffset
+    ? weekdayNames[new Date(today.getFullYear(), today.getMonth(), today.getDate() + dayOffset - 1).getDay()]
+    : null
+  const nextWeekday = dayOffset < maxOffset
+    ? weekdayNames[new Date(today.getFullYear(), today.getMonth(), today.getDate() + dayOffset + 1).getDay()]
+    : null
+
   return (
     <div className="space-y-6">
       <div>
@@ -88,7 +120,7 @@ export function Agendamento() {
             Navegação por Dia
           </CardTitle>
           <CardDescription>
-            Navegue entre os dias para visualizar o agendamento
+            Navegue entre os dias da semana (Domingo a Sábado)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -96,9 +128,10 @@ export function Agendamento() {
             <Button
               variant="outline"
               onClick={() => setDayOffset(dayOffset - 1)}
+              disabled={!canGoPrev}
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              Dia Anterior
+              {prevWeekday ?? 'Domingo'}
             </Button>
             <Badge variant="default" className="text-base px-4 py-2">
               {getDayLabel()}
@@ -106,8 +139,9 @@ export function Agendamento() {
             <Button
               variant="outline"
               onClick={() => setDayOffset(dayOffset + 1)}
+              disabled={!canGoNext}
             >
-              Dia Posterior
+              {nextWeekday ?? 'Sábado'}
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           </div>

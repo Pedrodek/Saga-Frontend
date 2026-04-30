@@ -2,23 +2,15 @@ import { useState } from 'react'
 import { SidebarProvider, SidebarTrigger } from "./components/ui/sidebar"
 import { AppSidebar } from "./components/AppSidebar"
 import { Dashboard } from "./components/Dashboard"
-import { SalasManager } from "./components/SalasManager"
-import { ProfessoresManager } from "./components/ProfessoresManager" 
-import { DisciplinasManager } from "./components/DisciplinasManager"
-import { TurmasManager } from "./components/TurmasManager"
-import { EnsalamentoExecutor } from "./components/EnsalamentoExecutor"
 import { Agendamento } from "./components/Agendamento"
 import { GradeHorario } from "./components/GradeHorario"
-import { Relatorios } from "./components/Relatorios"
-import { Configuracoes } from "./components/Configuracoes"
 import { LoginPage } from "./components/LoginPage"
-import { UserProfile } from "./components/UserProfile"
 import { GradeProvider } from "./context/GradeContext"
 import { Toaster } from "./components/ui/sonner"
 import { Button } from "./components/ui/button"
 import { LogOut, User } from 'lucide-react'
 
-export type NavigationItem = 'dashboard' | 'salas' | 'professores' | 'disciplinas' | 'turmas' | 'ensalamento' | 'agendamento' | 'grade' | 'relatorios' | 'configuracoes' | 'perfil'
+export type NavigationItem = 'dashboard' | 'agendamento' | 'grade'
 
 interface UserData {
   email: string
@@ -53,26 +45,10 @@ export default function App() {
     switch (activeSection) {
       case 'dashboard':
         return <Dashboard />
-      case 'salas':
-        return <SalasManager />
-      case 'professores':
-        return <ProfessoresManager />
-      case 'disciplinas':
-        return <DisciplinasManager />
-      case 'turmas':
-        return <TurmasManager />
-      case 'ensalamento':
-        return <EnsalamentoExecutor />
       case 'agendamento':
         return <Agendamento />
       case 'grade':
         return <GradeHorario />
-      case 'relatorios':
-        return <Relatorios />
-      case 'configuracoes':
-        return <Configuracoes />
-      case 'perfil':
-        return <UserProfile user={user} />
       default:
         return <Dashboard />
     }
@@ -95,12 +71,12 @@ export default function App() {
                 <div className="ml-4 min-w-0 flex-1">
                   {/* Título responsivo */}
                   <h1 className="truncate">
-                    <span className="sm:hidden">UniRoom</span>
-                    <span className="hidden sm:inline lg:hidden">Sistema de Ensalamento</span>
-                    <span className="hidden lg:inline">Sistema de Ensalamento Acadêmico</span>
+                    <span className="sm:hidden">SAGA</span>
+                    <span className="hidden sm:inline lg:hidden">Sistema SAGA</span>
+                    <span className="hidden lg:inline">Sistema de Agendamento e Gestão Acadêmica</span>
                   </h1>
                   <p className="text-muted-foreground hidden sm:block truncate">
-                    Coordenação Universitária
+                    Unidade Rudge Ramos
                   </p>
                 </div>
               </div>
