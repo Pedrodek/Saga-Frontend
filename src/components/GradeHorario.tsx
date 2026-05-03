@@ -1,4 +1,4 @@
-import { useRef, type ChangeEvent } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
@@ -9,15 +9,29 @@ import {
   Download,
   FileSpreadsheet,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  Loader2,
+  Building2,
+  BookOpen,
+  GraduationCap,
+  Users,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useGrade, type GradeEntry } from '../context/GradeContext'
+import { sagaApi } from '../services/api'
 
 export function GradeHorario() {
   const { gradeEntries, setGradeEntries } = useGrade()
   const localFileInputRef = useRef<HTMLInputElement | null>(null)
   const totvsFileInputRef = useRef<HTMLInputElement | null>(null)
+
+  // Backend upload refs
+  const salaCsvRef = useRef<HTMLInputElement | null>(null)
+  const cursoExcelRef = useRef<HTMLInputElement | null>(null)
+  const disciplinaExcelRef = useRef<HTMLInputElement | null>(null)
+  const turmaExcelRef = useRef<HTMLInputElement | null>(null)
+  const professorExcelRef = useRef<HTMLInputElement | null>(null)
+  const [uploading, setUploading] = useState<string | null>(null)
 
   const normalizeJoin = (value: string | undefined) => {
     if (!value) return 'N'
@@ -99,6 +113,45 @@ export function GradeHorario() {
     }
 
     reader.readAsText(file, 'utf-8')
+  }
+
+  // Backend upload handler
+  const handleBackendUpload = async (
+    event: ChangeEvent<HTMLInputElement>,
+    uploadFn: (file: File) => Promise<{ message: string }>,
+    label: string
+  ) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setUploading(label)
+    try {
+      const result = await uploadFn(file)
+      toast.success(result.message)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Erro ao importar ${label}`)
+    } finally {
+      setUploading(null)
+      event.target.value = ''
+    }
+  }
+
+  // Download professor template
+  const handleDownloadTemplate = async () => {
+    try {
+      const blob = await sagaApi.professores.downloadTemplate()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'Template_Disponibilidade.xlsx')
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+      toast.success('Template baixado com sucesso')
+    } catch {
+      toast.error('Erro ao baixar template. Verifique se o backend está rodando.')
+    }
   }
 
   const handleExport = () => {
@@ -190,15 +243,15 @@ export function GradeHorario() {
         </Card>
       </div>
 
-      {/* Ações de Import/Export */}
+      {/* Ações de Import/Export — Local (CSV) */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileSpreadsheet className="h-5 w-5" />
-            Importação e Exportação
+            Importação Local (CSV)
           </CardTitle>
           <CardDescription>
-            A Grade de Horários recebe os dados prontos após Agendamento / Alocação
+            Importar dados localmente para a grade do frontend
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -217,7 +270,7 @@ export function GradeHorario() {
             </Button>
           </div>
 
-          {/* File inputs ocultos */}
+          {/* File inputs ocultos — local */}
           <input
             type="file"
             accept=".csv"
@@ -232,6 +285,93 @@ export function GradeHorario() {
             style={{ display: 'none' }}
             onChange={(event) => handleFileChange(event, 'totvs')}
           />
+        </CardContent>
+      </Card>
+
+      {/* Importação para o Backend (API) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Importar para o Backend
+          </CardTitle>
+          <CardDescription>
+            Enviar arquivos diretamente para a API Saga-Backend (porta 3000)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Button
+              onClick={() => salaCsvRef.current?.click()}
+              variant="outline"
+              disabled={uploading !== null}
+              className="justify-start"
+            >
+              {uploading === 'Salas' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Building2 className="mr-2 h-4 w-4" />}
+              Importar Salas (CSV)
+            </Button>
+
+            <Button
+              onClick={() => cursoExcelRef.current?.click()}
+              variant="outline"
+              disabled={uploading !== null}
+              className="justify-start"
+            >
+              {uploading === 'Cursos' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BookOpen className="mr-2 h-4 w-4" />}
+              Importar Cursos (XLSX)
+            </Button>
+
+            <Button
+              onClick={() => disciplinaExcelRef.current?.click()}
+              variant="outline"
+              disabled={uploading !== null}
+              className="justify-start"
+            >
+              {uploading === 'Disciplinas' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileSpreadsheet className="mr-2 h-4 w-4" />}
+              Importar Disciplinas (XLSX)
+            </Button>
+
+            <Button
+              onClick={() => turmaExcelRef.current?.click()}
+              variant="outline"
+              disabled={uploading !== null}
+              className="justify-start"
+            >
+              {uploading === 'Turmas' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GraduationCap className="mr-2 h-4 w-4" />}
+              Importar Turmas (XLSX)
+            </Button>
+
+            <Button
+              onClick={() => professorExcelRef.current?.click()}
+              variant="outline"
+              disabled={uploading !== null}
+              className="justify-start"
+            >
+              {uploading === 'Professores' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
+              Importar Disponibilidade (XLSX)
+            </Button>
+
+            <Button
+              onClick={handleDownloadTemplate}
+              variant="outline"
+              className="justify-start"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Baixar Template Professor
+            </Button>
+          </div>
+
+          {/* File inputs ocultos — backend */}
+          <input type="file" accept=".csv" ref={salaCsvRef} style={{ display: 'none' }}
+            onChange={(e) => handleBackendUpload(e, sagaApi.predios.importCsv, 'Salas')} />
+          <input type="file" accept=".xlsx" ref={cursoExcelRef} style={{ display: 'none' }}
+            onChange={(e) => handleBackendUpload(e, sagaApi.cursos.importExcel, 'Cursos')} />
+          <input type="file" accept=".xlsx" ref={disciplinaExcelRef} style={{ display: 'none' }}
+            onChange={(e) => handleBackendUpload(e, sagaApi.disciplinas.importExcel, 'Disciplinas')} />
+          <input type="file" accept=".xlsx" ref={turmaExcelRef} style={{ display: 'none' }}
+            onChange={(e) => handleBackendUpload(e, sagaApi.turmas.importExcel, 'Turmas')} />
+          <input type="file" accept=".xlsx" ref={professorExcelRef} style={{ display: 'none' }}
+            onChange={(e) => handleBackendUpload(e, sagaApi.professores.importDisponibilidade, 'Professores')} />
         </CardContent>
       </Card>
 
@@ -300,6 +440,7 @@ export function GradeHorario() {
           Ao importar dados via CSV, certifique-se de que as colunas estejam na ordem correta: 
           Curso, Disciplina, Horário, Turma, Professor, Sala+Prédio, Junção (S/N), Alunos.
           Para importação TOTVS, utilize delimitador ponto-e-vírgula (;).
+          Importações para o backend são enviadas via API para localhost:3000.
         </AlertDescription>
       </Alert>
     </div>

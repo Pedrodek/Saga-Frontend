@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { Badge } from "./ui/badge"
@@ -10,48 +11,62 @@ import {
   AlertTriangle,
   Calendar,
   TrendingUp,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react'
+import { sagaApi } from '../services/api'
 
-// Mock data para demonstração
-const dashboardData = {
-  stats: {
-    salas: 45,
-    professores: 78,
-    disciplinas: 124,
-    turmas: 156
-  },
-  alerts: [
-    {
-      id: 1,
-      type: 'warning',
-      title: 'Conflito de Capacidade',
-      message: 'Sala A-201 com 35 alunos para capacidade de 30',
-      time: '2 min atrás'
-    },
-    {
-      id: 2,
-      type: 'error',
-      title: 'Professor Indisponível',
-      message: 'Prof. Silva tem conflito de horário na terça às 14h',
-      time: '15 min atrás'
-    },
-    {
-      id: 3,
-      type: 'info',
-      title: 'Ensalamento Pendente',
-      message: '12 turmas aguardando alocação de sala',
-      time: '1h atrás'
-    }
-  ],
-  recentActivities: [
-    { action: 'Nova turma criada', details: 'Algoritmos II - Turma A', time: '10 min' },
-    { action: 'Sala editada', details: 'Lab Informática 3 - Capacidade alterada', time: '25 min' },
-    { action: 'Professor cadastrado', details: 'Dr. Maria Santos - Matemática', time: '1h' }
-  ]
+// Dados que NÃO têm GET no backend — mantidos como mock
+const mockStats = {
+  professores: 78,
+  disciplinas: 124,
+  turmas: 156,
 }
 
+const mockAlerts = [
+  {
+    id: 1,
+    type: 'warning',
+    title: 'Conflito de Capacidade',
+    message: 'Sala A-201 com 35 alunos para capacidade de 30',
+    time: '2 min atrás'
+  },
+  {
+    id: 2,
+    type: 'error',
+    title: 'Professor Indisponível',
+    message: 'Prof. Silva tem conflito de horário na terça às 14h',
+    time: '15 min atrás'
+  },
+  {
+    id: 3,
+    type: 'info',
+    title: 'Ensalamento Pendente',
+    message: '12 turmas aguardando alocação de sala',
+    time: '1h atrás'
+  }
+]
+
+const mockRecentActivities = [
+  { action: 'Nova turma criada', details: 'Algoritmos II - Turma A', time: '10 min' },
+  { action: 'Sala editada', details: 'Lab Informática 3 - Capacidade alterada', time: '25 min' },
+  { action: 'Professor cadastrado', details: 'Dr. Maria Santos - Matemática', time: '1h' }
+]
+
 export function Dashboard() {
+  const [totalSalas, setTotalSalas] = useState<number | null>(null)
+  const [loadingSalas, setLoadingSalas] = useState(true)
+
+  useEffect(() => {
+    sagaApi.predios.getAll()
+      .then((predios) => {
+        const count = predios.reduce((acc, p) => acc + p.salas.length, 0)
+        setTotalSalas(count)
+      })
+      .catch(() => setTotalSalas(null))
+      .finally(() => setLoadingSalas(false))
+  }, [])
+
   return (
     <div className="space-y-6">
       <div>
@@ -69,9 +84,11 @@ export function Dashboard() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardData.stats.salas}</div>
+            <div className="text-2xl font-bold">
+              {loadingSalas ? <Loader2 className="h-6 w-6 animate-spin" /> : totalSalas ?? '—'}
+            </div>
             <p className="text-xs text-muted-foreground">
-              +2 novas este mês
+              {totalSalas !== null ? 'via GET /predios' : 'backend offline'}
             </p>
           </CardContent>
         </Card>
@@ -82,7 +99,7 @@ export function Dashboard() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardData.stats.professores}</div>
+            <div className="text-2xl font-bold">{mockStats.professores}</div>
             <p className="text-xs text-muted-foreground">
               +5 novos este semestre
             </p>
@@ -95,7 +112,7 @@ export function Dashboard() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardData.stats.disciplinas}</div>
+            <div className="text-2xl font-bold">{mockStats.disciplinas}</div>
             <p className="text-xs text-muted-foreground">
               Ativas no semestre
             </p>
@@ -108,7 +125,7 @@ export function Dashboard() {
             <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardData.stats.turmas}</div>
+            <div className="text-2xl font-bold">{mockStats.turmas}</div>
             <p className="text-xs text-muted-foreground">
               Para ensalamento
             </p>
@@ -129,7 +146,7 @@ export function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {dashboardData.alerts.map((alert) => (
+            {mockAlerts.map((alert) => (
               <Alert key={alert.id} className={alert.type === 'error' ? 'border-destructive' : alert.type === 'warning' ? 'border-yellow-500' : 'border-blue-500'}>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle className="flex items-center justify-between">
@@ -192,7 +209,7 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {dashboardData.recentActivities.map((activity, index) => (
+            {mockRecentActivities.map((activity, index) => (
               <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <div>
                   <p className="font-medium">{activity.action}</p>
