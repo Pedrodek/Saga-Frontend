@@ -92,21 +92,21 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #172554 50%, #1E3A8A 100%)' }}>
       <div className="w-full max-w-md space-y-6">
         {/* Logo e Título */}
         <div className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-full flex items-center justify-center">
-            <GraduationCap className="w-8 h-8 text-primary-foreground" />
+          <div className="mx-auto w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FBBF24' }}>
+            <GraduationCap className="w-8 h-8" style={{ color: '#1E3A8A' }} />
           </div>
-          <h1 className="text-3xl font-bold">UniRoom</h1>
-          <p className="text-muted-foreground">
-            Sistema de Ensalamento Acadêmico
+          <h1 className="text-3xl font-bold text-white">SAGA</h1>
+          <p style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+            Sistema de Alocação e Gestão Acadêmica
           </p>
         </div>
 
         {/* Card de Login */}
-        <Card className="shadow-lg">
+        <Card className="shadow-lg" style={{ borderRadius: '16px' }}>
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">Fazer Login</CardTitle>
             <CardDescription className="text-center">
@@ -170,7 +170,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button type="submit" className="w-full" disabled={isLoading} style={{ backgroundColor: '#1E3A8A' }}>
                 {isLoading ? 'Entrando...' : 'Entrar'}
               </Button>
             </form>
@@ -185,7 +185,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         </Card>
 
         {/* Demonstração - Usuários de teste */}
-        <Card className="shadow-lg">
+        <Card className="shadow-lg" style={{ borderRadius: '16px' }}>
           <CardHeader>
             <CardTitle className="text-center">Demonstração</CardTitle>
             <CardDescription className="text-center">
@@ -230,8 +230,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
         {/* Footer */}
         <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            © 2024 Universidade. Todos os direitos reservados.
+          <p className="text-sm" style={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+            © 2026 SAGA - Sistema de Alocação e Gestão Acadêmica. Todos os direitos reservados.
           </p>
         </div>
       </div>

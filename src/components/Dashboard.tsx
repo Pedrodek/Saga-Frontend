@@ -3,11 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
-import { 
-  Building2, 
-  Users, 
-  BookOpen, 
-  GraduationCap, 
+import {
+  Building2,
+  Users,
+  BookOpen,
+  GraduationCap,
   AlertTriangle,
   Calendar,
   TrendingUp,
@@ -53,6 +53,14 @@ const mockRecentActivities = [
   { action: 'Professor cadastrado', details: 'Dr. Maria Santos - Matemática', time: '1h' }
 ]
 
+// Ícones dos stat cards com suas cores brand
+const statCards = [
+  { label: 'Total de Salas', icon: Building2, iconColor: '#1E3A8A', bg: '#EEF2FF', valueKey: 'salas' as const },
+  { label: 'Professores',    icon: Users,     iconColor: '#FBBF24', bg: '#FFFBEB', valueKey: 'prof'  as const },
+  { label: 'Disciplinas',    icon: BookOpen,  iconColor: '#3B82F6', bg: '#EFF6FF', valueKey: 'disc'  as const },
+  { label: 'Turmas',         icon: GraduationCap, iconColor: '#F59E0B', bg: '#FFF7ED', valueKey: 'turmas' as const },
+]
+
 export function Dashboard() {
   const [totalSalas, setTotalSalas] = useState<number | null>(null)
   const [loadingSalas, setLoadingSalas] = useState(true)
@@ -67,78 +75,72 @@ export function Dashboard() {
       .finally(() => setLoadingSalas(false))
   }, [])
 
+  const statValues = {
+    salas:  loadingSalas ? null : totalSalas,
+    prof:   mockStats.professores,
+    disc:   mockStats.disciplinas,
+    turmas: mockStats.turmas,
+  }
+
   return (
     <div className="space-y-6">
+      {/* ── Page Header ── */}
       <div>
-        <h1>Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 style={{ color: '#1E3A8A', fontWeight: 700, fontSize: '24px', margin: 0 }}>Dashboard</h1>
+        <p style={{ color: '#6B7280', marginTop: '4px', fontSize: '14px' }}>
           Visão geral do sistema de ensalamento acadêmico
         </p>
       </div>
 
-      {/* Cards de estatísticas */}
+      {/* ── Stat Cards ── */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle>Total de Salas</CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loadingSalas ? <Loader2 className="h-6 w-6 animate-spin" /> : totalSalas ?? '—'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {totalSalas !== null ? 'via GET /predios' : 'backend offline'}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle>Professores</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockStats.professores}</div>
-            <p className="text-xs text-muted-foreground">
-              +5 novos este semestre
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle>Disciplinas</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockStats.disciplinas}</div>
-            <p className="text-xs text-muted-foreground">
-              Ativas no semestre
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle>Turmas</CardTitle>
-            <GraduationCap className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{mockStats.turmas}</div>
-            <p className="text-xs text-muted-foreground">
-              Para ensalamento
-            </p>
-          </CardContent>
-        </Card>
+        {statCards.map(({ label, icon: Icon, iconColor, bg, valueKey }) => (
+          <Card key={label}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle style={{ color: '#374151', fontSize: '14px', fontWeight: 500 }}>
+                {label}
+              </CardTitle>
+              <div
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  backgroundColor: bg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Icon size={18} color={iconColor} />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div style={{ fontSize: '28px', fontWeight: 700, color: '#1a1a2e', lineHeight: 1.2 }}>
+                {valueKey === 'salas'
+                  ? loadingSalas
+                    ? <Loader2 className="h-6 w-6 animate-spin" style={{ color: '#1E3A8A' }} />
+                    : (totalSalas ?? '—')
+                  : statValues[valueKey]}
+              </div>
+              <p style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px' }}>
+                {valueKey === 'salas'
+                  ? totalSalas !== null ? 'via GET /predios' : 'backend offline'
+                  : valueKey === 'prof'  ? '+5 novos este semestre'
+                  : valueKey === 'disc'  ? 'Ativas no semestre'
+                  : 'Para ensalamento'}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
+      {/* ── Alerts + Quick Actions ── */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {/* Alertas */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2" style={{ color: '#1E3A8A' }}>
+              <AlertTriangle className="h-5 w-5" style={{ color: '#FBBF24' }} />
               Alertas do Sistema
             </CardTitle>
             <CardDescription>
@@ -167,8 +169,8 @@ export function Dashboard() {
         {/* Ações rápidas */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2" style={{ color: '#1E3A8A' }}>
+              <TrendingUp className="h-5 w-5" style={{ color: '#1E3A8A' }} />
               Ações Rápidas
             </CardTitle>
             <CardDescription>
@@ -196,11 +198,11 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Atividades recentes */}
+      {/* ── Atividades recentes ── */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2" style={{ color: '#1E3A8A' }}>
+            <Clock className="h-5 w-5" style={{ color: '#1E3A8A' }} />
             Atividades Recentes
           </CardTitle>
           <CardDescription>
@@ -208,12 +210,12 @@ export function Dashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {mockRecentActivities.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+              <div key={index} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#F8F9FA' }}>
                 <div>
-                  <p className="font-medium">{activity.action}</p>
-                  <p className="text-sm text-muted-foreground">{activity.details}</p>
+                  <p style={{ fontWeight: 500, fontSize: '14px', color: '#1a1a2e' }}>{activity.action}</p>
+                  <p style={{ fontSize: '12px', color: '#6B7280' }}>{activity.details}</p>
                 </div>
                 <Badge variant="outline">{activity.time}</Badge>
               </div>
