@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { SidebarProvider, SidebarTrigger } from "./components/ui/sidebar"
 import { AppSidebar } from "./components/AppSidebar"
 import { Dashboard } from "./components/Dashboard"
 import { Agendamento } from "./components/Agendamento"
@@ -56,63 +55,87 @@ export default function App() {
 
   return (
     <GradeProvider>
-    <SidebarProvider>
-      <div className="flex min-h-screen w-full">
-        <AppSidebar 
-          activeSection={activeSection} 
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100%', backgroundColor: '#F8F9FA' }}>
+        {/* ── SIDEBAR ── */}
+        <AppSidebar
+          activeSection={activeSection}
           onNavigate={setActiveSection}
           user={user}
         />
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <div className="border-b bg-background">
-            <div className="flex h-16 items-center justify-between px-2 md:px-4 gap-2">
-              <div className="flex items-center min-w-0 flex-1">
-                <SidebarTrigger />
-                <div className="ml-4 min-w-0 flex-1">
-                  {/* Título responsivo */}
-                  <h1 className="truncate">
-                    <span className="sm:hidden">SAGA</span>
-                    <span className="hidden sm:inline lg:hidden">Sistema SAGA</span>
-                    <span className="hidden lg:inline">Sistema de Agendamento e Gestão Acadêmica</span>
-                  </h1>
-                  <p className="text-muted-foreground hidden sm:block truncate">
-                    Unidade Rudge Ramos
-                  </p>
-                </div>
-              </div>
-              
-              {/* Informações do usuário e logout */}
-              <div className="flex items-center gap-2 md:gap-4 shrink-0">
-                <div className="hidden md:flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4" />
-                  <div className="text-right">
-                    <div className="font-medium truncate max-w-32">{user.nome}</div>
-                    <div className="text-muted-foreground">{user.perfil}</div>
+
+        {/* ── MAIN CONTENT ── */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {/* ── TOP HEADER BAR ── */}
+          <header
+            style={{
+              height: '64px',
+              backgroundColor: '#ffffff',
+              borderBottom: '1px solid #E5E7EB',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0 24px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              flexShrink: 0,
+            }}
+          >
+            {/* Left: Page Title */}
+            <div>
+              <h1
+                style={{
+                  color: '#1E3A8A',
+                  fontWeight: 600,
+                  fontSize: '16px',
+                  margin: 0,
+                  lineHeight: 1.3,
+                }}
+              >
+                Sistema de Alocação e Gestão Acadêmica
+              </h1>
+              <p
+                style={{
+                  color: '#6B7280',
+                  fontSize: '12px',
+                  margin: 0,
+                  lineHeight: 1.3,
+                }}
+              >
+                Unidade Rudge Ramos
+              </p>
+            </div>
+
+            {/* Right: User info + logout */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <User size={16} color="#1E3A8A" />
+                <div>
+                  <div style={{ fontWeight: 500, fontSize: '13px', lineHeight: 1.2, color: '#1a1a2e' }}>
+                    {user.nome}
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#6B7280', lineHeight: 1.2 }}>
+                    {user.perfil}
                   </div>
                 </div>
-                {/* Versão compacta para mobile */}
-                <div className="md:hidden flex items-center">
-                  <User className="h-4 w-4" />
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleLogout}
-                  className="flex items-center gap-1 md:gap-2"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="hidden sm:inline">Sair</span>
-                </Button>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Sair</span>
+              </Button>
             </div>
-          </div>
-          <div className="flex-1 overflow-auto p-6">
+          </header>
+
+          {/* ── PAGE CONTENT ── */}
+          <main style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
             {renderActiveSection()}
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
       <Toaster />
-    </SidebarProvider>
     </GradeProvider>
   )
 }

@@ -106,8 +106,8 @@ export function Agendamento() {
   return (
     <div className="space-y-6">
       <div>
-        <h1>Agendamento</h1>
-        <p className="text-muted-foreground">
+        <h1 style={{ color: '#1E3A8A', fontWeight: 700, fontSize: '24px', margin: 0 }}>Agendamento</h1>
+        <p style={{ color: '#6B7280', marginTop: '4px', fontSize: '14px' }}>
           Visualização da grade e da semana de aulas — Carrossel de Aulas da Semana
         </p>
       </div>

@@ -33,7 +33,7 @@ export const api = {
   },
 };
 
-// ---- DTOs matching existing backend responses ----
+// ---- DTOs matching backend responses ----
 
 export interface HorarioSalaDTO {
   id: number;
@@ -57,26 +57,56 @@ export interface PredioDTO {
   salas: SalaDTO[];
 }
 
-// ---- Wrappers only for endpoints that EXIST in the backend ----
+export interface CursoDTO {
+  id_curso: number;
+  nome: string;
+  codigo_curso: string;
+  _count: { turmas: number };
+}
+
+export interface DisciplinaDTO {
+  id_disciplina: number;
+  codigo_disciplina: string;
+  nome: string;
+}
+
+export interface TurmaDTO {
+  id_turma: number;
+  codigo_turma: string;
+  turno: string;
+  quantidade: number | null;
+  semestre: number;
+  curso: { nome: string };
+}
+
+export interface ProfessorDTO {
+  id_professor: number;
+  nome: string;
+  email: string;
+  _count: { disciplinas: number; horarios: number };
+}
+
+// ---- API wrappers for all endpoints ----
 
 export const sagaApi = {
-  // GET /predios — only GET endpoint for data listing
   predios: {
     getAll: () => api.get<PredioDTO[]>('/predios'),
     importCsv: (file: File) => api.upload<{ message: string }>('/predios/importar-csv', file),
   },
-
-  // POST-only modules (import XLSX + delete)
   cursos: {
+    getAll: () => api.get<CursoDTO[]>('/cursos'),
     importExcel: (file: File) => api.upload<{ message: string }>('/cursos/importar-excel', file),
   },
   disciplinas: {
+    getAll: () => api.get<DisciplinaDTO[]>('/disciplinas'),
     importExcel: (file: File) => api.upload<{ message: string }>('/disciplinas/importar-excel', file),
   },
   turmas: {
+    getAll: () => api.get<TurmaDTO[]>('/turmas'),
     importExcel: (file: File) => api.upload<{ message: string }>('/turmas/importar-excel', file),
   },
   professores: {
+    getAll: () => api.get<ProfessorDTO[]>('/professores'),
     downloadTemplate: () => api.downloadBlob('/professores/template-disponibilidade'),
     importDisponibilidade: (file: File) => api.upload<{ message: string }>('/professores/importar-disponibilidade', file),
   },
