@@ -16,13 +16,6 @@ import {
 } from 'lucide-react'
 import { sagaApi } from '../services/api'
 
-// Dados que NÃO têm GET no backend — mantidos como mock
-const mockStats = {
-  professores: 78,
-  disciplinas: 124,
-  turmas: 156,
-}
-
 const mockAlerts = [
   {
     id: 1,
@@ -63,23 +56,53 @@ const statCards = [
 
 export function Dashboard() {
   const [totalSalas, setTotalSalas] = useState<number | null>(null)
-  const [loadingSalas, setLoadingSalas] = useState(true)
+  const [totalProf, setTotalProf] = useState<number | null>(null)
+  const [totalDisc, setTotalDisc] = useState<number | null>(null)
+  const [totalTurmas, setTotalTurmas] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    sagaApi.predios.getAll()
-      .then((predios) => {
-        const count = predios.reduce((acc, p) => acc + p.salas.length, 0)
-        setTotalSalas(count)
-      })
-      .catch(() => setTotalSalas(null))
-      .finally(() => setLoadingSalas(false))
+    const fetchAll = async () => {
+      try {
+        const [predios, professores, disciplinas, turmas] = await Promise.allSettled([
+          sagaApi.predios.getAll(),
+          sagaApi.professores.getAll(),
+          sagaApi.disciplinas.getAll(),
+          sagaApi.turmas.getAll(),
+        ])
+
+        if (predios.status === 'fulfilled') {
+          setTotalSalas(predios.value.reduce((acc, p) => acc + p.salas.length, 0))
+        }
+        if (professores.status === 'fulfilled') {
+          setTotalProf(professores.value.length)
+        }
+        if (disciplinas.status === 'fulfilled') {
+          setTotalDisc(disciplinas.value.length)
+        }
+        if (turmas.status === 'fulfilled') {
+          setTotalTurmas(turmas.value.length)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAll()
   }, [])
 
   const statValues = {
-    salas:  loadingSalas ? null : totalSalas,
-    prof:   mockStats.professores,
-    disc:   mockStats.disciplinas,
-    turmas: mockStats.turmas,
+    salas:  totalSalas,
+    prof:   totalProf,
+    disc:   totalDisc,
+    turmas: totalTurmas,
+  }
+
+  const statSubtitles = {
+    salas:  totalSalas !== null ? 'via GET /predios' : 'backend offline',
+    prof:   totalProf !== null ? 'via GET /professores' : 'backend offline',
+    disc:   totalDisc !== null ? 'via GET /disciplinas' : 'backend offline',
+    turmas: totalTurmas !== null ? 'via GET /turmas' : 'backend offline',
   }
 
   return (
@@ -116,18 +139,12 @@ export function Dashboard() {
             </CardHeader>
             <CardContent>
               <div style={{ fontSize: '28px', fontWeight: 700, color: '#1a1a2e', lineHeight: 1.2 }}>
-                {valueKey === 'salas'
-                  ? loadingSalas
-                    ? <Loader2 className="h-6 w-6 animate-spin" style={{ color: '#1E3A8A' }} />
-                    : (totalSalas ?? '—')
-                  : statValues[valueKey]}
+                {loading
+                  ? <Loader2 className="h-6 w-6 animate-spin" style={{ color: '#1E3A8A' }} />
+                  : (statValues[valueKey] ?? '—')}
               </div>
               <p style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '4px' }}>
-                {valueKey === 'salas'
-                  ? totalSalas !== null ? 'via GET /predios' : 'backend offline'
-                  : valueKey === 'prof'  ? '+5 novos este semestre'
-                  : valueKey === 'disc'  ? 'Ativas no semestre'
-                  : 'Para ensalamento'}
+                {statSubtitles[valueKey]}
               </p>
             </CardContent>
           </Card>
