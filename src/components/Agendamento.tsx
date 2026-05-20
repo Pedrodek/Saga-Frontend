@@ -14,7 +14,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Users,
-  BookOpen
+  BookOpen,
+  Loader2
 } from 'lucide-react'
 import { useGrade } from '../context/GradeContext'
 
@@ -25,19 +26,26 @@ const periodConfig = [
   { name: 'Noite' as const, time: '19:30 - 21:10', icon: Moon, color: 'text-indigo-500' },
 ]
 
-export function Agendamento() {
-  const { gradeEntries } = useGrade()
-  const [dayOffset, setDayOffset] = useState(0)
+const WEEKDAYS = [
+  { key: 'DOMINGO', label: 'Domingo', jsDay: 0 },
+  { key: 'SEGUNDA', label: 'Segunda-feira', jsDay: 1 },
+  { key: 'TERCA', label: 'Terça-feira', jsDay: 2 },
+  { key: 'QUARTA', label: 'Quarta-feira', jsDay: 3 },
+  { key: 'QUINTA', label: 'Quinta-feira', jsDay: 4 },
+  { key: 'SEXTA', label: 'Sexta-feira', jsDay: 5 },
+  { key: 'SABADO', label: 'Sábado', jsDay: 6 },
+]
 
-  const weekdayNames = [
-    'Domingo', 'Segunda-feira', 'Terça-feira',
-    'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'
-  ]
+export function Agendamento() {
+  const { gradeEntries, loading } = useGrade()
+  const [dayOffset, setDayOffset] = useState(0)
 
   const today = new Date()
   const currentDate = new Date(today)
   currentDate.setDate(today.getDate() + dayOffset)
-  const currentWeekday = currentDate.getDay() // 0=Dom, 6=Sáb
+  const currentWeekdayIdx = currentDate.getDay() // 0=Dom, 6=Sáb
+
+  const currentWeekday = WEEKDAYS[currentWeekdayIdx]
 
   // Limites: Domingo (início da semana) e Sábado (fim da semana)
   const todayWeekday = today.getDay()
@@ -47,12 +55,6 @@ export function Agendamento() {
   const canGoPrev = dayOffset > minOffset
   const canGoNext = dayOffset < maxOffset
 
-  const getDayKey = () => {
-    if (dayOffset === 0) return 'Atual'
-    if (dayOffset < 0) return 'Anterior'
-    return 'Posterior'
-  }
-
   const getFormattedDate = () => {
     const day = String(currentDate.getDate()).padStart(2, '0')
     const month = String(currentDate.getMonth() + 1).padStart(2, '0')
@@ -60,13 +62,13 @@ export function Agendamento() {
   }
 
   const getDayLabel = () => {
-    const name = weekdayNames[currentWeekday]
+    const name = currentWeekday.label
     if (dayOffset === 0) return `${name} (Hoje)`
     return `${name}, ${getFormattedDate()}`
   }
 
-  const currentDay = getDayKey()
-  const currentEntries = gradeEntries.filter((entry) => entry.day === currentDay)
+  // Filtrar entries pelo dia da semana atual (usando a key do backend: SEGUNDA, TERCA, etc.)
+  const currentEntries = gradeEntries.filter((entry) => entry.day === currentWeekday.key)
 
   const getPeriodStats = (periodName: string) => {
     const entries = currentEntries.filter((entry) => entry.period === periodName)
@@ -95,13 +97,11 @@ export function Agendamento() {
 
   const absentClasses = currentEntries.filter((entry) => !entry.hasClass)
 
-  // Weekday do dia anterior e posterior para os botões
-  const prevWeekday = dayOffset > minOffset
-    ? weekdayNames[new Date(today.getFullYear(), today.getMonth(), today.getDate() + dayOffset - 1).getDay()]
-    : null
-  const nextWeekday = dayOffset < maxOffset
-    ? weekdayNames[new Date(today.getFullYear(), today.getMonth(), today.getDate() + dayOffset + 1).getDay()]
-    : null
+  // Weekday labels for prev/next buttons
+  const prevWeekdayIdx = currentWeekdayIdx - 1
+  const nextWeekdayIdx = currentWeekdayIdx + 1
+  const prevWeekdayLabel = prevWeekdayIdx >= 0 ? WEEKDAYS[prevWeekdayIdx].label : null
+  const nextWeekdayLabel = nextWeekdayIdx <= 6 ? WEEKDAYS[nextWeekdayIdx].label : null
 
   return (
     <div className="space-y-6">
@@ -131,7 +131,7 @@ export function Agendamento() {
               disabled={!canGoPrev}
             >
               <ChevronLeft className="mr-2 h-4 w-4" />
-              {prevWeekday ?? 'Domingo'}
+              {prevWeekdayLabel ?? 'Domingo'}
             </Button>
             <Badge variant="default" className="text-base px-4 py-2">
               {getDayLabel()}
@@ -141,121 +141,144 @@ export function Agendamento() {
               onClick={() => setDayOffset(dayOffset + 1)}
               disabled={!canGoNext}
             >
-              {nextWeekday ?? 'Sábado'}
+              {nextWeekdayLabel ?? 'Sábado'}
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </CardContent>
       </Card>
 
+      {/* Loading state */}
+      {loading && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#1E3A8A' }} />
+          <span className="ml-3 text-muted-foreground">Carregando agendamentos...</span>
+        </div>
+      )}
+
       {/* Carrossel de Períodos */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {periodConfig.map((period) => {
-          const stats = getPeriodStats(period.name)
-          const PeriodIcon = period.icon
-          return (
-            <Card key={period.name}>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2">
-                  <PeriodIcon className={`h-5 w-5 ${period.color}`} />
-                  {period.name}
-                </CardTitle>
-                <CardDescription>{period.time}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">
-                    {stats.courseCount} curso{stats.courseCount !== 1 ? 's' : ''} com aula
-                  </Badge>
-                </div>
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="h-3 w-3" />
-                    <span>{stats.totalEntries} turma{stats.totalEntries !== 1 ? 's' : ''} neste período</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3 w-3 text-green-500" />
-                    <span>{stats.activeEntries} com aula confirmada</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-3 w-3" />
-                    <span>{stats.fullyActiveCourses} curso{stats.fullyActiveCourses !== 1 ? 's' : ''} com todas as turmas em aula</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+      {!loading && (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {periodConfig.map((period) => {
+              const stats = getPeriodStats(period.name)
+              const PeriodIcon = period.icon
+              return (
+                <Card key={period.name}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2">
+                      <PeriodIcon className={`h-5 w-5 ${period.color}`} />
+                      {period.name}
+                    </CardTitle>
+                    <CardDescription>{period.time}</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">
+                        {stats.courseCount} curso{stats.courseCount !== 1 ? 's' : ''} com aula
+                      </Badge>
+                    </div>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="h-3 w-3" />
+                        <span>{stats.totalEntries} turma{stats.totalEntries !== 1 ? 's' : ''} neste período</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                        <span>{stats.activeEntries} com aula confirmada</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-3 w-3" />
+                        <span>{stats.fullyActiveCourses} curso{stats.fullyActiveCourses !== 1 ? 's' : ''} com todas as turmas em aula</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
 
-      {/* Lista de Turmas Sem Aula */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            Lista de Turmas que Não Terão Aula
-          </CardTitle>
-          <CardDescription>
-            Turmas identificadas sem aula no {getDayLabel().toLowerCase()}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {absentClasses.length === 0 ? (
-            <Alert>
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertTitle>Tudo certo</AlertTitle>
-              <AlertDescription>
-                Todas as turmas têm aula neste dia. Nenhuma ausência identificada.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="space-y-4">
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>{absentClasses.length} turma{absentClasses.length !== 1 ? 's' : ''} sem aula</AlertTitle>
-                <AlertDescription>
-                  As turmas abaixo não terão aula no {getDayLabel().toLowerCase()}.
-                  Verifique a causa raiz (ex: falta de professor ou conflito de sala).
-                </AlertDescription>
-              </Alert>
+          {/* Lista de Turmas Sem Aula */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Lista de Turmas que Não Terão Aula
+              </CardTitle>
+              <CardDescription>
+                Turmas identificadas sem aula no {getDayLabel().toLowerCase()}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {currentEntries.length === 0 ? (
+                <Alert>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <AlertTitle>Sem agendamentos</AlertTitle>
+                  <AlertDescription>
+                    Nenhum agendamento encontrado para {getDayLabel().toLowerCase()}.
+                    {currentWeekdayIdx === 0 || currentWeekdayIdx === 6
+                      ? ' (fim de semana)'
+                      : ' Importe dados no Grade Horário ou execute o seed no backend.'}
+                  </AlertDescription>
+                </Alert>
+              ) : absentClasses.length === 0 ? (
+                <Alert>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <AlertTitle>Tudo certo</AlertTitle>
+                  <AlertDescription>
+                    Todas as {currentEntries.length} turma{currentEntries.length !== 1 ? 's' : ''} têm aula neste dia. Nenhuma ausência identificada.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-4">
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>{absentClasses.length} turma{absentClasses.length !== 1 ? 's' : ''} sem aula</AlertTitle>
+                    <AlertDescription>
+                      As turmas abaixo não terão aula no {getDayLabel().toLowerCase()}.
+                      Verifique a causa raiz (ex: falta de professor ou conflito de sala).
+                    </AlertDescription>
+                  </Alert>
 
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Curso</TableHead>
-                    <TableHead>Disciplina</TableHead>
-                    <TableHead>Turma</TableHead>
-                    <TableHead>Professor</TableHead>
-                    <TableHead>Período</TableHead>
-                    <TableHead>Alunos</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {absentClasses.map((cls) => (
-                    <TableRow key={cls.id}>
-                      <TableCell>
-                        <Badge variant="outline">{cls.course}</Badge>
-                      </TableCell>
-                      <TableCell>{cls.discipline}</TableCell>
-                      <TableCell className="font-medium">{cls.className}</TableCell>
-                      <TableCell>{cls.teacher}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{cls.period}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {cls.students}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Curso</TableHead>
+                        <TableHead>Disciplina</TableHead>
+                        <TableHead>Turma</TableHead>
+                        <TableHead>Professor</TableHead>
+                        <TableHead>Período</TableHead>
+                        <TableHead>Alunos</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {absentClasses.map((cls) => (
+                        <TableRow key={cls.id}>
+                          <TableCell>
+                            <Badge variant="outline">{cls.course}</Badge>
+                          </TableCell>
+                          <TableCell>{cls.discipline}</TableCell>
+                          <TableCell className="font-medium">{cls.className}</TableCell>
+                          <TableCell>{cls.teacher}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{cls.period}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {cls.students}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   )
 }

@@ -216,7 +216,7 @@ export function GradeHorario() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalStudents}</div>
-            <p className="text-xs text-muted-foreground">total na metodologia</p>
+            <p className="text-xs text-muted-foreground">total na Metodista</p>
           </CardContent>
         </Card>
 

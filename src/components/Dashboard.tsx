@@ -99,10 +99,10 @@ export function Dashboard() {
   }
 
   const statSubtitles = {
-    salas:  totalSalas !== null ? 'via GET /predios' : 'backend offline',
-    prof:   totalProf !== null ? 'via GET /professores' : 'backend offline',
-    disc:   totalDisc !== null ? 'via GET /disciplinas' : 'backend offline',
-    turmas: totalTurmas !== null ? 'via GET /turmas' : 'backend offline',
+    salas:  totalSalas !== null ? 'Registradas no sistema' : 'Sem conexão',
+    prof:   totalProf !== null ? 'Cadastrados' : 'Sem conexão',
+    disc:   totalDisc !== null ? 'Cadastradas' : 'Sem conexão',
+    turmas: totalTurmas !== null ? 'Ativas no semestre' : 'Sem conexão',
   }
 
   return (

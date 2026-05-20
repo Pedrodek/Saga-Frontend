@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { sagaApi, type AgendamentoDTO } from '../services/api'
 
 export type GradeEntry = {
   id: number
@@ -11,137 +12,75 @@ export type GradeEntry = {
   join: string
   students: number
   period: 'Matutino' | 'Vespertino' | 'Diurno' | 'Noite'
-  day: 'Anterior' | 'Atual' | 'Posterior'
+  day: string // 'SEGUNDA' | 'TERCA' | ... or 'Atual' for CSV imports
   hasClass: boolean
 }
 
 type GradeContextType = {
   gradeEntries: GradeEntry[]
   setGradeEntries: React.Dispatch<React.SetStateAction<GradeEntry[]>>
+  loading: boolean
 }
 
 const GradeContext = createContext<GradeContextType | undefined>(undefined)
 
-const initialGradeEntries: GradeEntry[] = [
-  {
-    id: 1,
-    course: 'Gestão',
-    discipline: 'Administração Financeira',
-    time: '19:30 - 21:10',
-    className: 'G1',
-    teacher: 'Prof. Silva',
-    room: 'Sala 12 / Prédio A',
+function inferPeriodFromTime(horaInicio: string): GradeEntry['period'] {
+  // horaInicio comes as ISO string like "1970-01-01T08:00:00.000Z"
+  const date = new Date(horaInicio)
+  const hours = date.getUTCHours()
+  const minutes = date.getUTCMinutes()
+  const totalMinutes = hours * 60 + minutes
+
+  if (totalMinutes >= 480 && totalMinutes < 720) return 'Matutino'       // 08:00 - 12:00
+  if (totalMinutes >= 780 && totalMinutes < 930) return 'Vespertino'     // 13:00 - 15:30
+  if (totalMinutes >= 930 && totalMinutes < 1080) return 'Diurno'        // 15:30 - 18:00
+  return 'Noite'                                                         // 19:00+
+}
+
+function formatTime(horaInicio: string, horaFim: string): string {
+  const fmt = (iso: string) => {
+    const d = new Date(iso)
+    return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`
+  }
+  return `${fmt(horaInicio)} - ${fmt(horaFim)}`
+}
+
+function agendamentoToGradeEntry(ag: AgendamentoDTO): GradeEntry {
+  return {
+    id: ag.id_agendamento,
+    course: ag.turma.curso.codigo_curso,
+    discipline: ag.turma.codigo_turma,
+    time: formatTime(ag.hora_inicio, ag.hora_fim),
+    className: ag.turma.codigo_turma,
+    teacher: ag.professor.nome,
+    room: `${ag.sala.numero_sala} / ${ag.sala.predio.nome}`,
     join: 'Não',
-    students: 28,
-    period: 'Noite',
-    day: 'Atual',
+    students: ag.turma.quantidade ?? 0,
+    period: inferPeriodFromTime(ag.hora_inicio),
+    day: ag.dia_semana,
     hasClass: true,
-  },
-  {
-    id: 2,
-    course: 'Gestão',
-    discipline: 'Matemática',
-    time: '19:30 - 21:10',
-    className: 'G2',
-    teacher: 'Prof. Souza',
-    room: 'Sala 14 / Prédio A',
-    join: 'Sim',
-    students: 30,
-    period: 'Noite',
-    day: 'Atual',
-    hasClass: true,
-  },
-  {
-    id: 3,
-    course: 'Informática',
-    discipline: 'Redes de Computadores',
-    time: '13:00 - 15:00',
-    className: 'TI2',
-    teacher: 'Profª Lima',
-    room: 'Lab 4 / Prédio B',
-    join: 'Sim',
-    students: 24,
-    period: 'Vespertino',
-    day: 'Atual',
-    hasClass: true,
-  },
-  {
-    id: 4,
-    course: 'Informática',
-    discipline: 'Programação Web',
-    time: '13:00 - 15:00',
-    className: 'TI3',
-    teacher: 'Profª Lima',
-    room: 'Lab 5 / Prédio B',
-    join: 'Não',
-    students: 26,
-    period: 'Vespertino',
-    day: 'Atual',
-    hasClass: false,
-  },
-  {
-    id: 5,
-    course: 'Saúde',
-    discipline: 'Nutrição Básica',
-    time: '08:00 - 10:00',
-    className: 'S1',
-    teacher: 'Profª Rosa',
-    room: 'Sala 3 / Prédio C',
-    join: 'Não',
-    students: 20,
-    period: 'Matutino',
-    day: 'Atual',
-    hasClass: true,
-  },
-  {
-    id: 6,
-    course: 'Saúde',
-    discipline: 'Anatomia',
-    time: '08:00 - 10:00',
-    className: 'S2',
-    teacher: 'Prof. Carlos',
-    room: 'Sala 4 / Prédio C',
-    join: 'Não',
-    students: 22,
-    period: 'Matutino',
-    day: 'Atual',
-    hasClass: false,
-  },
-  {
-    id: 7,
-    course: 'Gestão',
-    discipline: 'Gestão de Pessoas',
-    time: '08:00 - 10:00',
-    className: 'G1',
-    teacher: 'Prof. Silva',
-    room: 'Sala 11 / Prédio A',
-    join: 'Sim',
-    students: 28,
-    period: 'Matutino',
-    day: 'Anterior',
-    hasClass: true,
-  },
-  {
-    id: 8,
-    course: 'Informática',
-    discipline: 'Banco de Dados',
-    time: '15:30 - 17:30',
-    className: 'TI2',
-    teacher: 'Profª Lima',
-    room: 'Lab 4 / Prédio B',
-    join: 'Não',
-    students: 24,
-    period: 'Diurno',
-    day: 'Posterior',
-    hasClass: true,
-  },
-]
+  }
+}
 
 export function GradeProvider({ children }: { children: ReactNode }) {
-  const [gradeEntries, setGradeEntries] = useState<GradeEntry[]>(initialGradeEntries)
+  const [gradeEntries, setGradeEntries] = useState<GradeEntry[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    sagaApi.agendamentos.getAll()
+      .then((agendamentos) => {
+        const entries = agendamentos.map(agendamentoToGradeEntry)
+        setGradeEntries(entries)
+      })
+      .catch((err) => {
+        console.warn('Não foi possível carregar agendamentos do backend:', err)
+        // Mantém vazio — o usuário pode importar via CSV
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
   return (
-    <GradeContext.Provider value={{ gradeEntries, setGradeEntries }}>
+    <GradeContext.Provider value={{ gradeEntries, setGradeEntries, loading }}>
       {children}
     </GradeContext.Provider>
   )
