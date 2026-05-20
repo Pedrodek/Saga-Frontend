@@ -86,6 +86,28 @@ export interface ProfessorDTO {
   _count: { disciplinas: number; horarios: number };
 }
 
+export interface AgendamentoDTO {
+  id_agendamento: number;
+  dia_semana: string;
+  hora_inicio: string;
+  hora_fim: string;
+  professor: { id_professor: number; nome: string };
+  turma: {
+    id_turma: number;
+    codigo_turma: string;
+    turno: string;
+    quantidade: number | null;
+    semestre: number;
+    curso: { nome: string; codigo_curso: string };
+  };
+  sala: {
+    id_sala: number;
+    numero_sala: string;
+    capacidade: number | null;
+    predio: { nome: string };
+  };
+}
+
 // ---- API wrappers for all endpoints ----
 
 export const sagaApi = {
@@ -109,5 +131,8 @@ export const sagaApi = {
     getAll: () => api.get<ProfessorDTO[]>('/professores'),
     downloadTemplate: () => api.downloadBlob('/professores/template-disponibilidade'),
     importDisponibilidade: (file: File) => api.upload<{ message: string }>('/professores/importar-disponibilidade', file),
+  },
+  agendamentos: {
+    getAll: (dia?: string) => api.get<AgendamentoDTO[]>(dia ? `/agendamentos?dia=${dia}` : '/agendamentos'),
   },
 };
