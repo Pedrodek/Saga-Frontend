@@ -43,13 +43,13 @@ export default function App() {
   const renderActiveSection = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard />
+        return <Dashboard onNavigate={setActiveSection} />
       case 'agendamento':
         return <Agendamento />
       case 'grade':
         return <GradeHorario />
       default:
-        return <Dashboard />
+        return <Dashboard onNavigate={setActiveSection} />
     }
   }
 

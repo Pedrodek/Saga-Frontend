@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert"
 import { Badge } from "./ui/badge"
@@ -12,39 +12,16 @@ import {
   Calendar,
   TrendingUp,
   Clock,
-  Loader2
+  Loader2,
+  CheckCircle2,
+  TableProperties,
 } from 'lucide-react'
-import { sagaApi } from '../services/api'
+import { sagaApi, type AgendamentoDTO, type PredioDTO, type TurmaDTO } from '../services/api'
+import type { NavigationItem } from '../App'
 
-const mockAlerts = [
-  {
-    id: 1,
-    type: 'warning',
-    title: 'Conflito de Capacidade',
-    message: 'Sala A-201 com 35 alunos para capacidade de 30',
-    time: '2 min atrás'
-  },
-  {
-    id: 2,
-    type: 'error',
-    title: 'Professor Indisponível',
-    message: 'Prof. Silva tem conflito de horário na terça às 14h',
-    time: '15 min atrás'
-  },
-  {
-    id: 3,
-    type: 'info',
-    title: 'Ensalamento Pendente',
-    message: '12 turmas aguardando alocação de sala',
-    time: '1h atrás'
-  }
-]
-
-const mockRecentActivities = [
-  { action: 'Nova turma criada', details: 'Algoritmos II - Turma A', time: '10 min' },
-  { action: 'Sala editada', details: 'Lab Informática 3 - Capacidade alterada', time: '25 min' },
-  { action: 'Professor cadastrado', details: 'Dr. Maria Santos - Matemática', time: '1h' }
-]
+interface DashboardProps {
+  onNavigate: (section: NavigationItem) => void
+}
 
 // Ícones dos stat cards com suas cores brand
 const statCards = [
@@ -54,24 +31,150 @@ const statCards = [
   { label: 'Turmas',         icon: GraduationCap, iconColor: '#F59E0B', bg: '#FFF7ED', valueKey: 'turmas' as const },
 ]
 
-export function Dashboard() {
+interface DynamicAlert {
+  id: number
+  type: 'warning' | 'error' | 'info'
+  title: string
+  message: string
+}
+
+function generateAlerts(
+  predios: PredioDTO[],
+  turmas: TurmaDTO[],
+  agendamentos: AgendamentoDTO[]
+): DynamicAlert[] {
+  const alerts: DynamicAlert[] = []
+  let id = 1
+
+  // 1. Conflitos de capacidade: turma com mais alunos do que a sala suporta
+  for (const ag of agendamentos) {
+    const turmaQtd = ag.turma.quantidade ?? 0
+    const salaCapacidade = ag.sala.capacidade ?? 999
+    if (turmaQtd > salaCapacidade) {
+      alerts.push({
+        id: id++,
+        type: 'warning',
+        title: 'Conflito de Capacidade',
+        message: `${ag.turma.codigo_turma} (${turmaQtd} alunos) na sala ${ag.sala.numero_sala} (capacidade ${salaCapacidade})`,
+      })
+    }
+  }
+
+  // 2. Turmas sem agendamento
+  const turmasComAgendamento = new Set(agendamentos.map(a => a.turma.id_turma))
+  const turmasSemAgendamento = turmas.filter(t => !turmasComAgendamento.has(t.id_turma))
+  if (turmasSemAgendamento.length > 0) {
+    alerts.push({
+      id: id++,
+      type: 'info',
+      title: 'Ensalamento Pendente',
+      message: `${turmasSemAgendamento.length} turma${turmasSemAgendamento.length > 1 ? 's' : ''} aguardando alocação de sala`,
+    })
+  }
+
+  // 3. Salas sem utilização
+  const salasComAgendamento = new Set(agendamentos.map(a => a.sala.id_sala))
+  const totalSalas = predios.reduce((acc, p) => acc + p.salas.length, 0)
+  const salasOciosas = totalSalas - salasComAgendamento.size
+  if (salasOciosas > 0 && totalSalas > 0) {
+    alerts.push({
+      id: id++,
+      type: 'info',
+      title: 'Salas Ociosas',
+      message: `${salasOciosas} de ${totalSalas} salas não possuem agendamentos`,
+    })
+  }
+
+  // Se tudo OK
+  if (alerts.length === 0) {
+    alerts.push({
+      id: id++,
+      type: 'info',
+      title: 'Sistema OK',
+      message: 'Nenhum conflito ou pendência detectada',
+    })
+  }
+
+  return alerts
+}
+
+interface ActivityItem {
+  action: string
+  details: string
+  badge: string
+}
+
+function generateActivities(
+  predios: PredioDTO[],
+  turmas: TurmaDTO[],
+  agendamentos: AgendamentoDTO[]
+): ActivityItem[] {
+  const activities: ActivityItem[] = []
+
+  const totalSalas = predios.reduce((acc, p) => acc + p.salas.length, 0)
+  if (totalSalas > 0) {
+    activities.push({
+      action: `${totalSalas} salas registradas`,
+      details: predios.map(p => `${p.nome} (${p.salas.length})`).join(', '),
+      badge: 'Salas',
+    })
+  }
+
+  if (turmas.length > 0) {
+    const porTurno: Record<string, number> = {}
+    turmas.forEach(t => { porTurno[t.turno] = (porTurno[t.turno] || 0) + 1 })
+    const turnoStr = Object.entries(porTurno).map(([k, v]) => `${v} ${k.toLowerCase()}`).join(', ')
+    activities.push({
+      action: `${turmas.length} turmas ativas`,
+      details: turnoStr,
+      badge: 'Turmas',
+    })
+  }
+
+  if (agendamentos.length > 0) {
+    const diasUnicos = new Set(agendamentos.map(a => a.dia_semana)).size
+    activities.push({
+      action: `${agendamentos.length} agendamentos`,
+      details: `Distribuídos em ${diasUnicos} dia${diasUnicos > 1 ? 's' : ''} da semana`,
+      badge: 'Grade',
+    })
+  }
+
+  if (activities.length === 0) {
+    activities.push({
+      action: 'Sem dados no sistema',
+      details: 'Importe dados na tela Grade Horário',
+      badge: 'Vazio',
+    })
+  }
+
+  return activities
+}
+
+export function Dashboard({ onNavigate }: DashboardProps) {
   const [totalSalas, setTotalSalas] = useState<number | null>(null)
   const [totalProf, setTotalProf] = useState<number | null>(null)
   const [totalDisc, setTotalDisc] = useState<number | null>(null)
   const [totalTurmas, setTotalTurmas] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const [prediosData, setPrediosData] = useState<PredioDTO[]>([])
+  const [turmasData, setTurmasData] = useState<TurmaDTO[]>([])
+  const [agendamentosData, setAgendamentosData] = useState<AgendamentoDTO[]>([])
+
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [predios, professores, disciplinas, turmas] = await Promise.allSettled([
+        const [predios, professores, disciplinas, turmas, agendamentos] = await Promise.allSettled([
           sagaApi.predios.getAll(),
           sagaApi.professores.getAll(),
           sagaApi.disciplinas.getAll(),
           sagaApi.turmas.getAll(),
+          sagaApi.agendamentos.getAll(),
         ])
 
         if (predios.status === 'fulfilled') {
+          setPrediosData(predios.value)
           setTotalSalas(predios.value.reduce((acc, p) => acc + p.salas.length, 0))
         }
         if (professores.status === 'fulfilled') {
@@ -81,7 +184,11 @@ export function Dashboard() {
           setTotalDisc(disciplinas.value.length)
         }
         if (turmas.status === 'fulfilled') {
+          setTurmasData(turmas.value)
           setTotalTurmas(turmas.value.length)
+        }
+        if (agendamentos.status === 'fulfilled') {
+          setAgendamentosData(agendamentos.value)
         }
       } finally {
         setLoading(false)
@@ -104,6 +211,16 @@ export function Dashboard() {
     disc:   totalDisc !== null ? 'Cadastradas' : 'Sem conexão',
     turmas: totalTurmas !== null ? 'Ativas no semestre' : 'Sem conexão',
   }
+
+  const dynamicAlerts = useMemo(
+    () => generateAlerts(prediosData, turmasData, agendamentosData),
+    [prediosData, turmasData, agendamentosData]
+  )
+
+  const recentActivities = useMemo(
+    () => generateActivities(prediosData, turmasData, agendamentosData),
+    [prediosData, turmasData, agendamentosData]
+  )
 
   return (
     <div className="space-y-6">
@@ -161,25 +278,33 @@ export function Dashboard() {
               Alertas do Sistema
             </CardTitle>
             <CardDescription>
-              Conflitos e notificações importantes
+              Conflitos e notificações gerados automaticamente
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {mockAlerts.map((alert) => (
-              <Alert key={alert.id} className={alert.type === 'error' ? 'border-destructive' : alert.type === 'warning' ? 'border-yellow-500' : 'border-blue-500'}>
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle className="flex items-center justify-between">
-                  {alert.title}
-                  <Badge variant={alert.type === 'error' ? 'destructive' : alert.type === 'warning' ? 'secondary' : 'default'}>
-                    {alert.type === 'error' ? 'Erro' : alert.type === 'warning' ? 'Atenção' : 'Info'}
-                  </Badge>
-                </AlertTitle>
-                <AlertDescription className="mt-2">
-                  {alert.message}
-                  <p className="text-xs text-muted-foreground mt-1">{alert.time}</p>
-                </AlertDescription>
-              </Alert>
-            ))}
+          <CardContent className="space-y-4" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+            {loading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" style={{ color: '#1E3A8A' }} />
+                <span className="text-muted-foreground">Analisando dados...</span>
+              </div>
+            ) : (
+              dynamicAlerts.map((alert) => (
+                <Alert key={alert.id} className={alert.type === 'error' ? 'border-destructive' : alert.type === 'warning' ? 'border-yellow-500' : 'border-blue-500'}>
+                  {alert.type === 'info' && alert.title === 'Sistema OK'
+                    ? <CheckCircle2 className="h-4 w-4" />
+                    : <AlertTriangle className="h-4 w-4" />}
+                  <AlertTitle className="flex items-center justify-between">
+                    {alert.title}
+                    <Badge variant={alert.type === 'error' ? 'destructive' : alert.type === 'warning' ? 'secondary' : 'default'}>
+                      {alert.type === 'error' ? 'Erro' : alert.type === 'warning' ? 'Atenção' : 'Info'}
+                    </Badge>
+                  </AlertTitle>
+                  <AlertDescription className="mt-2">
+                    {alert.message}
+                  </AlertDescription>
+                </Alert>
+              ))
+            )}
           </CardContent>
         </Card>
 
@@ -195,49 +320,56 @@ export function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full justify-start" variant="outline">
+            <Button className="w-full justify-start" variant="outline" onClick={() => onNavigate('agendamento')}>
               <Calendar className="mr-2 h-4 w-4" />
-              Executar Ensalamento
+              Ver Agendamentos
             </Button>
-            <Button className="w-full justify-start" variant="outline">
+            <Button className="w-full justify-start" variant="outline" onClick={() => onNavigate('grade')}>
+              <TableProperties className="mr-2 h-4 w-4" />
+              Grade de Horários
+            </Button>
+            <Button className="w-full justify-start" variant="outline" onClick={() => onNavigate('grade')}>
               <Building2 className="mr-2 h-4 w-4" />
-              Nova Sala
+              Importar Salas
             </Button>
-            <Button className="w-full justify-start" variant="outline">
+            <Button className="w-full justify-start" variant="outline" onClick={() => onNavigate('grade')}>
               <Users className="mr-2 h-4 w-4" />
-              Cadastrar Professor
-            </Button>
-            <Button className="w-full justify-start" variant="outline">
-              <GraduationCap className="mr-2 h-4 w-4" />
-              Criar Turma
+              Importar Professores
             </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* ── Atividades recentes ── */}
+      {/* ── Resumo do Sistema ── */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2" style={{ color: '#1E3A8A' }}>
             <Clock className="h-5 w-5" style={{ color: '#1E3A8A' }} />
-            Atividades Recentes
+            Resumo do Sistema
           </CardTitle>
           <CardDescription>
-            Últimas alterações no sistema
+            Visão geral dos dados cadastrados
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {mockRecentActivities.map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#F8F9FA' }}>
-                <div>
-                  <p style={{ fontWeight: 500, fontSize: '14px', color: '#1a1a2e' }}>{activity.action}</p>
-                  <p style={{ fontSize: '12px', color: '#6B7280' }}>{activity.details}</p>
+          {loading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin mr-2" style={{ color: '#1E3A8A' }} />
+              <span className="text-muted-foreground">Carregando...</span>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentActivities.map((activity, index) => (
+                <div key={index} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#F8F9FA' }}>
+                  <div>
+                    <p style={{ fontWeight: 500, fontSize: '14px', color: '#1a1a2e' }}>{activity.action}</p>
+                    <p style={{ fontSize: '12px', color: '#6B7280' }}>{activity.details}</p>
+                  </div>
+                  <Badge variant="outline">{activity.badge}</Badge>
                 </div>
-                <Badge variant="outline">{activity.time}</Badge>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
