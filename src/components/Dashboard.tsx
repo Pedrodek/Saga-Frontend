@@ -235,7 +235,14 @@ export function Dashboard({ onNavigate }: DashboardProps) {
       {/* ── Stat Cards ── */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map(({ label, icon: Icon, iconColor, bg, valueKey }) => (
-          <Card key={label}>
+          <Card
+            key={label}
+            style={{ cursor: 'pointer', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(30,58,138,0.12)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '' }}
+            onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.97)' }}
+            onMouseUp={e => { e.currentTarget.style.transform = 'translateY(-2px)' }}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle style={{ color: '#374151', fontSize: '14px', fontWeight: 500 }}>
                 {label}
@@ -360,7 +367,13 @@ export function Dashboard({ onNavigate }: DashboardProps) {
           ) : (
             <div className="space-y-3">
               {recentActivities.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-xl" style={{ backgroundColor: '#F8F9FA' }}>
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 rounded-xl"
+                  style={{ backgroundColor: '#F8F9FA', transition: 'background-color 0.15s ease, transform 0.15s ease', cursor: 'default' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#EEF2FF'; e.currentTarget.style.transform = 'translateX(4px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = '#F8F9FA'; e.currentTarget.style.transform = 'translateX(0)' }}
+                >
                   <div>
                     <p style={{ fontWeight: 500, fontSize: '14px', color: '#1a1a2e' }}>{activity.action}</p>
                     <p style={{ fontSize: '12px', color: '#6B7280' }}>{activity.details}</p>

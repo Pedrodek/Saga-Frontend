@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import { sagaApi, type AgendamentoDTO } from '../services/api'
 
 export type GradeEntry = {
@@ -20,6 +20,7 @@ type GradeContextType = {
   gradeEntries: GradeEntry[]
   setGradeEntries: React.Dispatch<React.SetStateAction<GradeEntry[]>>
   loading: boolean
+  refreshEntries: () => Promise<void>
 }
 
 const GradeContext = createContext<GradeContextType | undefined>(undefined)
@@ -66,21 +67,21 @@ export function GradeProvider({ children }: { children: ReactNode }) {
   const [gradeEntries, setGradeEntries] = useState<GradeEntry[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    sagaApi.agendamentos.getAll()
-      .then((agendamentos) => {
-        const entries = agendamentos.map(agendamentoToGradeEntry)
-        setGradeEntries(entries)
-      })
-      .catch((err) => {
-        console.warn('Não foi possível carregar agendamentos do backend:', err)
-        // Mantém vazio — o usuário pode importar via CSV
-      })
-      .finally(() => setLoading(false))
+  const fetchEntries = useCallback(async () => {
+    try {
+      const agendamentos = await sagaApi.agendamentos.getAll()
+      setGradeEntries(agendamentos.map(agendamentoToGradeEntry))
+    } catch (err) {
+      console.warn('Não foi possível carregar agendamentos do backend:', err)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
+  useEffect(() => { fetchEntries() }, [fetchEntries])
+
   return (
-    <GradeContext.Provider value={{ gradeEntries, setGradeEntries, loading }}>
+    <GradeContext.Provider value={{ gradeEntries, setGradeEntries, loading, refreshEntries: fetchEntries }}>
       {children}
     </GradeContext.Provider>
   )
