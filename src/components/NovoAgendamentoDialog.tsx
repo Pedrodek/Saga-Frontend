@@ -121,8 +121,14 @@ export function NovoAgendamentoDialog({ onCreated }: NovoAgendamentoDialogProps)
       setOpen(false)
       onCreated()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erro ao criar agendamento'
-      setError(msg)
+      const raw = err instanceof Error ? err.message : 'Erro desconhecido'
+      if (raw.includes('Cannot PUT') || raw.includes('Cannot POST')) {
+        setError('Não foi possível conectar ao servidor. Verifique se o backend foi reiniciado com os endpoints mais recentes.')
+      } else if (raw.includes('Failed to fetch') || raw.includes('NetworkError')) {
+        setError('Servidor indisponível. Verifique se o backend está rodando.')
+      } else {
+        setError(raw)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -239,11 +245,13 @@ export function NovoAgendamentoDialog({ onCreated }: NovoAgendamentoDialogProps)
 
             {/* Error display */}
             {error && (
-              <div className="flex items-start gap-2 p-3 rounded-lg" style={{ backgroundColor: '#FEF2F2', border: '1px solid #FECACA' }}>
-                <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: '#DC2626' }} />
+              <div className="flex items-start gap-2 p-3 rounded-lg" style={{ backgroundColor: error.includes('Conflito') ? '#FEF2F2' : '#FFF7ED', border: `1px solid ${error.includes('Conflito') ? '#FECACA' : '#FDBA74'}` }}>
+                <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" style={{ color: error.includes('Conflito') ? '#DC2626' : '#D97706' }} />
                 <div>
-                  <p style={{ fontSize: '13px', fontWeight: 600, color: '#DC2626' }}>Conflito detectado</p>
-                  <p style={{ fontSize: '12px', color: '#991B1B' }}>{error}</p>
+                  <p style={{ fontSize: '13px', fontWeight: 600, color: error.includes('Conflito') ? '#DC2626' : '#D97706' }}>
+                    {error.includes('Conflito') ? 'Conflito de horário' : 'Erro ao salvar'}
+                  </p>
+                  <p style={{ fontSize: '12px', color: error.includes('Conflito') ? '#991B1B' : '#92400E' }}>{error}</p>
                 </div>
               </div>
             )}
