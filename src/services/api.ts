@@ -25,6 +25,15 @@ export const api = {
     return handleResponse<T>(res);
   },
 
+  async put<T = any>(path: string, body: Record<string, unknown>): Promise<T> {
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return handleResponse<T>(res);
+  },
+
   async del<T = any>(path: string): Promise<T> {
     const res = await fetch(`${API_BASE_URL}${path}`, { method: 'DELETE' });
     return handleResponse<T>(res);
@@ -150,6 +159,8 @@ export const sagaApi = {
     getAll: (dia?: string) => api.get<AgendamentoDTO[]>(dia ? `/agendamentos?dia=${dia}` : '/agendamentos'),
     create: (data: { id_professor: number; id_turma: number; id_sala: number; dia_semana: string; hora_inicio: string; hora_fim: string }) =>
       api.post<AgendamentoDTO>('/agendamentos', data),
+    update: (id: number, data: { id_professor: number; id_turma: number; id_sala: number; dia_semana: string; hora_inicio: string; hora_fim: string }) =>
+      api.put<AgendamentoDTO>(`/agendamentos/${id}`, data),
     remove: (id: number) => api.del<void>(`/agendamentos/${id}`),
   },
 };
